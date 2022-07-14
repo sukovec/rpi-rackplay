@@ -21,6 +21,8 @@ class MenuControl:
 
 		self.epoll = epoll()
 
+		self.cur_disp_state = None
+
 		self.init_timer()
 		self.init_keyboard(kbdev)
 
@@ -55,24 +57,30 @@ class MenuControl:
 		match event.code:
 			case KBCODE.UP:
 				print("UP")
+
 			case KBCODE.DOWN:
 				print("DOWN")
+
 			case KBCODE.LEFT:
-				self.menupos = self.menupos + 1
-				self.render_current()
+				self.move_lr(-1)
 
 			case KBCODE.RIGHT:
+				self.move_lr(1)
 				print("RIGHT")
+
 			case KBCODE.ENTER:
 				print("ENTER")
+
 			case KBCODE.EXIT:
 				print("EXIT")
 
+
 	def event_timer(self):
-		pass
+		self.render_current()
+		print("Re-rendered...")
 
 	def event_other(self, fileno, event):
-		pass
+		print("OTHER EVENT ???")
 
 	def event_loop_pass(self, fileno, event):
 		if fileno == self.kbinput.fd: # keyb event
@@ -83,13 +91,25 @@ class MenuControl:
 		else:
 			self.event_other(fileno, event)
 
+	# =============
+	# MENU BROWSING 
+	# =============
+
+	def move_lr(self, amount):
+		self.menupos = (self.menupos + amount) % len(self.menu)
+		self.render_current()
+		
+
 	# ================
 	# DISPLAY ROUTINES
 	# ================
 
 	def display_menu_item(self, drawdev, itm):
 		with canvas(drawdev) as draw:
-			itm.__render__(draw, drawdev.bounding_box)
+			state = itm.__render__(draw, drawdev.bounding_box, self.cur_disp_state)
+
+		self.cur_disp_state = state
+		self.timer.settime(itm.redraw_interval / 1000, itm.redraw_interval / 1000)
 
 	def render_current(self):
 		self.display_menu_item(self.drawdev, self.menu[self.menupos])

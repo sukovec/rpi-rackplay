@@ -21,9 +21,8 @@ from menu import MenuControl
 
 from renderers import StaticTextRenderer, CallbackTextRenderer
 
-#device = ssd1306(serial = i2c(port=1, address=0x3C))
-
-device = thedevice(256, 64, transform=None, scale=1, mode="1")
+device = ssd1306(serial = i2c(port=1, address=0x3C))
+#device = thedevice(256, 64, transform=None, scale=1, mode="1")
 
 with canvas(device) as draw:
 	draw.text((30, 10), "initializing", fill="white")
@@ -46,11 +45,12 @@ def get_current_playing_texts():
 	st_random = "rnd " if stat["random"] else "    "
 	st_state = stat["state"] + " | " + st_repeat + st_random
 
+	print(stat)
 	if song and not error:
 		return ( 
-			song["artist"],
-			song["title"],
-			stat["time"] + " / " + stat["duration"],
+			song.get('artist', 'X artist unknown X'),
+			song.get('title', 'X title unknown X'),
+			'{:02.0f}:{:02d} / {:02.0f}:{:02d}'.format(float(stat['elapsed']) / 60, int(float(stat['elapsed'])) % 60, float(stat['duration']) / 60, int(float(stat['duration'])) % 60), 
 			"",
 			st_state
 			)
@@ -61,7 +61,7 @@ def get_current_playing_texts():
 		return ( "Playlist empty", "", "", "", st_state )
 
 menu = ( 
-	CallbackTextRenderer(get_current_playing_texts), 
+	CallbackTextRenderer(get_current_playing_texts, redraw_interval = 500), 
 	StaticTextRenderer( ( "Rackpi Player", "Version " + VERSION, "Made by ja, pycho!", "", "<|> sem, <|> tam") )
 	)
 
