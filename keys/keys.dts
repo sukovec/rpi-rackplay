@@ -1,0 +1,47 @@
+/dts-v1/;
+/plugin/;
+/ {
+	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709";
+	
+	fragment@0 {
+		target-path = "/soc";
+		__overlay__ {
+			keypad: keypad {
+				compatible = "gpio-keys";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				button@13 {
+					label = "Test BTN0";
+					linux,code = <0x100>;
+					gpios = <&gpio 13 1>;
+				};
+				button@16 {
+					label = "Test BTN1";
+					linux,code = <0x101>;
+					gpios = <&gpio 16 1>;
+				};
+				button@19 {
+					label = "Test BTN2";
+					linux,code = <0x102>;
+					gpios = <&gpio 19 1>;
+				};
+				button@20 {
+					label = "Test BTN3";
+					linux,code = <0x103>;
+					gpios = <&gpio 20 1>;
+				};
+				button@21 {
+					label = "Test BTN4";
+					linux,code = <0x104>;
+					gpios = <&gpio 21 1>;
+				};
+				button@26 {
+					label = "Test BTN5";
+					linux,code = <0x105>;
+					gpios = <&gpio 26 1>;
+				};
+			};
+		};
+	};
+};
+
