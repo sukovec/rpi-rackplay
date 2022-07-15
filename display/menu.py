@@ -22,6 +22,7 @@ class MenuControl:
 		self.epoll = epoll()
 
 		self.cur_disp_state = None
+		self.displayeditem = None
 
 		self.init_timer()
 		self.init_keyboard(kbdev)
@@ -104,10 +105,14 @@ class MenuControl:
 	# ================
 
 	def display_menu_item(self, drawdev, itm):
-		with canvas(drawdev) as draw:
-			state = itm.__render__(draw, drawdev.bounding_box, self.cur_disp_state)
+		if self.displayeditem is not itm:
+			self.cur_disp_state = None
 
-		self.cur_disp_state = state
+		with canvas(drawdev) as draw:
+			self.cur_disp_state = itm.__render__(draw, drawdev.bounding_box, self.cur_disp_state)
+
+		self.displayeditem = itm
+
 		self.timer.settime(itm.redraw_interval / 1000, itm.redraw_interval / 1000)
 
 	def render_current(self):
