@@ -66,7 +66,6 @@ class MenuControl:
 
 			case KBCODE.RIGHT:
 				self.move_lr(1)
-				print("RIGHT")
 
 			case KBCODE.ENTER:
 				print("ENTER")

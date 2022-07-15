@@ -14,11 +14,11 @@ from luma.core.render import canvas
 from luma.oled.device import ssd1306
 from luma.emulator.device import asciiblock as thedevice
 
+import socket
 
 from mpd import MPDClient
 
 from menu import MenuControl
-
 from renderers import StaticTextRenderer, CallbackTextRenderer
 
 device = ssd1306(serial = i2c(port=1, address=0x3C))
@@ -36,7 +36,11 @@ if MPD_UNIX:
 else:
 	mpd.connect(MPD_HOST, MPD_PORT)
 
-def get_current_playing_texts():
+def screen_network():
+	ipa = socket.gethostbyname(socket.gethostname())
+	return ( "Network information:", "IP address:", "    " + ipa )
+
+def screen_default():
 	stat = mpd.status()
 	song = mpd.currentsong()
 
@@ -45,7 +49,6 @@ def get_current_playing_texts():
 	st_random = "rnd " if stat["random"] else "    "
 	st_state = stat["state"] + " | " + st_repeat + st_random
 
-	print(stat)
 	if song and not error:
 		return ( 
 			song.get('artist', 'X artist unknown X'),
@@ -60,10 +63,19 @@ def get_current_playing_texts():
 	else:
 		return ( "Playlist empty", "", "", "", st_state )
 
-menu = ( 
-	CallbackTextRenderer(get_current_playing_texts, redraw_interval = 500), 
+
+def current_playlist():
+	playlist = mpd.playlistid()
+	song = [ '  {} - {}'.format(itm.get('artist', '?'), itm.get('title', '?')) for itm in playlist[0:4] ]
+
+	return [" CURRENT PLAYLIST ", ] + song
+
+screens = ( 
+	CallbackTextRenderer(screen_default, redraw_interval = 500), 
+	CallbackTextRenderer(screen_network),
+	CallbackTextRenderer(current_playlist),
 	StaticTextRenderer( ( "Rackpi Player", "Version " + VERSION, "Made by ja, pycho!", "", "<|> sem, <|> tam") )
 	)
 
-mc = MenuControl(device, menu, KBDEV)
+mc = MenuControl(device, screens, KBDEV)
 mc.event_loop()
