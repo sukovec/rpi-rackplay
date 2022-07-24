@@ -74,7 +74,7 @@ screens = (
 	CallbackTextRenderer(screen_default, redraw_interval = 500), 
 	CallbackTextRenderer(screen_network),
 	CallbackTextRenderer(current_playlist),
-	StaticTextRenderer( ( "Rackpi Player", "Version " + VERSION, "Made by ja, pycho!", "", "<|> sem, <|> tam") )
+	StaticTextRenderer( ( "Rackpi Player", "Version " + VERSION, "Made by ja, pycho!", "", "<|> sem, <|> tam"))
 	)
 
 mc = MenuControl(device, screens, KBDEV)
