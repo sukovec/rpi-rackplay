@@ -36,6 +36,7 @@ class StaticTextRenderer(DisplayRenderer):
 
 			# test, if it needs to scroll 
 			if size[0] < bb[2] or noscroll[idx]:
+				state['scroll'][idx] = 0
 				continue
 
 			state['scroll'][idx] = state['scroll'][idx] + state['scrollspeed'][idx]

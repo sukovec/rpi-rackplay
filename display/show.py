@@ -9,10 +9,13 @@ MPD_UNIX = False
 
 VERSION="0.0.0.1"
 
-from luma.core.interface.serial import i2c 
+import spidev
+import RPi.GPIO as gpio
+from luma.core.interface.serial import spi
 from luma.core.render import canvas
-from luma.oled.device import ssd1306
-from luma.emulator.device import asciiblock as thedevice
+from sh1122 import sh1122
+#from luma.oled.device import ssd1306
+#from luma.emulator.device import asciiblock as thedevice
 
 import socket
 
@@ -21,7 +24,11 @@ from mpd import MPDClient
 from menu import MenuControl
 from renderers import StaticTextRenderer, CallbackTextRenderer
 
-device = ssd1306(serial = i2c(port=1, address=0x3C))
+gpio.setmode(gpio.BCM)
+srl = spi(spi = spidev.SpiDev(), gpio = gpio, transfer_size = 4096)
+device = sh1122(serial_interface = srl)
+
+#device = ssd1306(serial = i2c(port=1, address=0x3C))
 #device = thedevice(256, 64, transform=None, scale=1, mode="1")
 
 with canvas(device) as draw:
