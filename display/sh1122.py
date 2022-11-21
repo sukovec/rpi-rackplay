@@ -15,67 +15,66 @@ from luma.oled.device.framebuffer_mixin import __framebuffer_mixin
 __all__ = [ "sh1122" ]
 
 class ssh1122_const(const.common): # copying datashit: https://www.displayfuture.com/Display/datasheet/controller/SH1122.pdf
-	DISPLAYON   = 0b10101111
-	DISPLAYOOFF = 0b10101110
-	ENTIREON    = 0b10100101
-	ENTIREOFF   = 0b10100101
-
-	# configuring write address:
-	SETCOLHI   = 0b00010000 # last 3 bits = highest 3 bits of the address
-	SETCOLLO   = 0b00000000 # last 4 bits = lowest 4 bits of the address
-	SETROW	   = 0b01000000 # last 6 bits = row address
-	
-	SETCONTRAST= 0b10000001 # next "command" shall be actual contrast (whole byte)
-	SEGREMAP   = 0b10100000 # last bit rotates display
-	SETREVERS  = 0b10100110 # last bit reverses the pixel value
-
-	SETDCDC0   = 0b10101101
-	SETDCDC1   = 0b10000000 # last four bits are F2, F1, F0 (switch frequency) and D (enable DC-DC conversion)
-
-	SETSTLINE  = 0b01000000
-
-	SETMUXRATIO= 0b10101000
-	COMOUTDIR  = 0b11000000
-
-	DISPOFFSET = 0b11010011
+	SET_COL_ADR_LSB = 0X0
+	SET_COL_ADR_MSB = 0X10
+	SET_DISP_START_LINE = 0X40
+	SET_CONTRAST = 0X81
+	SET_SEG_REMAP = 0XA0
+	SET_ENTIRE_ON = 0XA4
+	SET_ENTIRE_OFF= 0XA5
+	SET_NORM_INV = 0XA6
+	SET_MUX_RATIO = 0XA8
+	SET_CTRL_DCDC = 0XAD
+	SET_DISP = 0XAE
+	SET_ROW_ADR = 0XB0
+	SET_COM_OUT_DIR = 0XC0
+	SET_DISP_OFFSET = 0XD3
+	SET_DISP_CLK_DIV = 0XD5
+	SET_PRECHARGE = 0xD9
+	SET_VCOM_DESEL = 0xDB
+	SET_VSEG_LEVEL = 0XDC
+	SET_DISCHARGE_LEVEL = 0X30
 
 
 class sh1122(greyscale_device):
-	def __init__(self, serial_interface=None, width=256, height=64, rotate=0, mode="RGB", framebuffer=full_frame(), **kwargs):
-		print("sh1122::__init__")
-		super().__init__(ssh1122_const, serial_interface, width, height, rotate, mode, framebuffer, nibble_order = 0, **kwargs)
+	def __init__(self, serial_interface=None, **kwargs):
+		super().__init__(ssh1122_const, serial_interface, 256, 64, 0, "RGB", full_frame(), nibble_order = 0, **kwargs)
 
 	def command(self, *args):
-		print("sh1122::command ", list(hex(x) for x in args))
 		return super().command(*args)
 	
 	def _supported_dimensions(self):
-		print("sh1122::_supported_dimensions")
 		return [ (256, 64) ] # I don't know about anything other...
 
 	def _init_sequence(self):
-		print("sh1122::_init_sequence")
-		self.command(self._const.DISPLAYON | 0x00);
-		self.command(self._const.SETCOLLO)
-		self.command(self._const.SETCOLHI)  # horizontal
-		self.command(self._const.SETROW, 0)
-		# resolution and layout
-		self.command(self._const.SETSTLINE | 0x00)
-		self.command(self._const.SEGREMAP)
-		self.command(self._const.SETMUXRATIO, self.height - 1)
-		self.command(self._const.COMOUTDIR)  # scan from COM0 to COM[N]
-		self.command(self._const.DISPOFFSET, 0x00)
-		self.command(0b11010101, 0b11110000) # WTF?
-		# display
-		self.command(self._const.SETCONTRAST, 0x80)  # median
-		self.command(self._const.ENTIREON)  # output follows RAM contents
-		self.command(self._const.SETREVERS)  # not inverted
-		self.command(self._const.DISPLAYON)
+		for cmd in (
+			self._const.SET_DISP | 0x00,  # off
+			# address setting
+			self._const.SET_COL_ADR_LSB,
+			self._const.SET_COL_ADR_MSB,  # horizontal
+			self._const.SET_ROW_ADR, 0,
+			# resolution and layout
+			self._const.SET_DISP_START_LINE | 0x00,
+			self._const.SET_SEG_REMAP,
+			self._const.SET_MUX_RATIO,
+			self.height - 1,
+			self._const.SET_COM_OUT_DIR,  # scan from COM0 to COM[N]
+			self._const.SET_DISP_OFFSET,
+			0x00,
+			0b11010101,
+			0b11110000,
+			# display
+			self._const.SET_CONTRAST,
+			0x80,  # median
+			self._const.SET_ENTIRE_ON,  # output follows RAM contents
+			self._const.SET_NORM_INV,  # not inverted
+			self._const.SET_DISP | 0x01,
+		):  
+			self.command(cmd)
+
 		pass
 
 	def _set_position(self, top, right, bottom, left):
-		print("sh1122::_set_position({}, {}, {}, {})".format(top, right, bottom, left))
-
 		pass
 
 	def display(self, image):
@@ -87,7 +86,6 @@ class sh1122(greyscale_device):
 		:param image: the image to render
 		:type image: PIL.Image.Image
 		"""
-		print("sh1122::display")
 
 		assert image.mode == self.mode
 		assert image.size == self.size
@@ -98,7 +96,6 @@ class sh1122(greyscale_device):
 			left, top, right, bottom = bounding_box
 			width = right - left
 			height = bottom - top
-			print("  forcycle left={} top={} right={} bottom={}".format(left, top, right, bottom))
 
 			buf = bytearray(width * height >> 1)
 
@@ -106,12 +103,10 @@ class sh1122(greyscale_device):
 			#self.command(self._const.SETCOLHI)
 			#self.command(self._const.SETROW, 20)
 			self._populate(buf, image.getdata())
+			self.data(buf)
 
-			with open("/home/player/kocky.img", "rb") as f:
-				buffer = bytearray(f.read())
-				self.data(buffer)
 
 	def cleanup(self):
 		print("sh1122::cleanup()")
-		self.command(self._const.ENTIREOFF) # to be abso-fucking-lutely sure
+		self.command(self._const.SET_ENTIRE_OFF) # to be abso-fucking-lutely sure
 		super().cleanup() # .. and this should call DISPLAYOFF command
